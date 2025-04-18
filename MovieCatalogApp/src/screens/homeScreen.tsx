@@ -4,7 +4,7 @@ import { searchMovies } from '../services/omdb';
 import MovieCard from '../components/MovieCard';
 
 export default function HomeScreen() {
-  const [searchTerm, setSearchTerm] = useState('marvel');
+  const [searchTerm, setSearchTerm] = useState('');
   const [movies, setMovies] = useState<{ imdbID: string; [key: string]: any }[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -12,6 +12,7 @@ export default function HomeScreen() {
     try {
       setLoading(true);
       const data = await searchMovies(term);
+      console.log('Filmes retornados:', data); // debug
       setMovies(data || []);
     } catch (err) {
       console.error('Erro ao buscar filmes', err);
@@ -20,14 +21,16 @@ export default function HomeScreen() {
     }
   };
 
+  // Carregar lista inicial com filmes de ação
   useEffect(() => {
-    fetchMovies(searchTerm);
+    fetchMovies('action');
   }, []);
 
   return (
     <View style={styles.container}>
       <TextInput
         placeholder="Buscar filmes..."
+        placeholderTextColor="#999"
         style={styles.input}
         value={searchTerm}
         onChangeText={(text) => setSearchTerm(text)}
@@ -35,7 +38,7 @@ export default function HomeScreen() {
       />
 
       {loading ? (
-        <Text style={{ marginTop: 20 }}>Carregando...</Text>
+        <Text style={styles.loading}>Carregando...</Text>
       ) : (
         <FlatList
           data={movies}
@@ -59,6 +62,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     marginBottom: 16,
+    fontSize: 16,
+  },
+  loading: {
+    marginTop: 20,
+    textAlign: 'center',
+    color: '#fff',
     fontSize: 16,
   },
 });

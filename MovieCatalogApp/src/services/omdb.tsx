@@ -1,11 +1,16 @@
 import axios from 'axios';
 
-const API_KEY = '';
+const API_KEY = '5ca296fa'; 
 const BASE_URL = 'https://www.omdbapi.com/';
 
 export const searchMovies = async (query: string) => {
   const response = await axios.get(`${BASE_URL}?apikey=${API_KEY}&s=${query}`);
-  return response.data.Search;
+  if (response.data.Response === 'True') {
+    return response.data.Search;
+  } else {
+    console.warn('Busca sem resultados:', response.data.Error);
+    return [];
+  }
 };
 
 export const getMovieDetails = async (imdbID: string) => {
