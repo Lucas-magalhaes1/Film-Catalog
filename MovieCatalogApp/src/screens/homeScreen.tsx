@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, FlatList, TextInput, Text, StyleSheet } from 'react-native';
+import { View, FlatList, TextInput, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { searchMovies } from '../services/omdb';
 import MovieCard from '../components/MovieCard';
 
@@ -7,36 +7,41 @@ export default function HomeScreen() {
   const [searchTerm, setSearchTerm] = useState('');
   const [movies, setMovies] = useState<{ imdbID: string; [key: string]: any }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [debounceTimeout, setDebounceTimeout] = useState<any>(null);
 
   const fetchMovies = async (term: string) => {
     try {
       setLoading(true);
+      setError('');
       const data = await searchMovies(term);
+      if (data.length === 0) {
+        setError('Nenhum filme encontrado.');
+      }
       setMovies(data || []);
     } catch (err) {
       console.error('Erro ao buscar filmes', err);
+      setError('Erro ao buscar filmes. Tente novamente.');
+      setMovies([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Busca inicial com filmes variados
   useEffect(() => {
     fetchMovies('action');
   }, []);
 
-  // Busca automática ao digitar (com debounce)
   useEffect(() => {
     if (debounceTimeout) clearTimeout(debounceTimeout);
 
     const timeout = setTimeout(() => {
       if (searchTerm.trim() === '') {
-        fetchMovies('action'); // Se campo vazio, mostra filmes variados
+        fetchMovies('action');
       } else {
         fetchMovies(searchTerm);
       }
-    }, 500); // 500ms de atraso
+    }, 500);
 
     setDebounceTimeout(timeout);
   }, [searchTerm]);
@@ -52,7 +57,12 @@ export default function HomeScreen() {
       />
 
       {loading ? (
-        <Text style={styles.loading}>Carregando...</Text>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.loadingText}>Carregando...</Text>
+        </View>
+      ) : error ? (
+        <Text style={styles.error}>{error}</Text>
       ) : (
         <FlatList
           data={movies}
@@ -78,10 +88,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontSize: 16,
   },
-  loading: {
-    marginTop: 20,
-    textAlign: 'center',
+  loadingContainer: {
+    marginTop: 30,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
     color: '#fff',
     fontSize: 16,
+  },
+  error: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });
