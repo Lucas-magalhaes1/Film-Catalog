@@ -3,6 +3,7 @@ import { View, FlatList, TextInput, Text, StyleSheet, ActivityIndicator } from '
 import { searchMovies } from '../services/omdb';
 import MovieCard from '../components/MovieCard';
 
+
 export default function HomeScreen() {
   const [searchTerm, setSearchTerm] = useState('');
   const [movies, setMovies] = useState<{ imdbID: string; [key: string]: any }[]>([]);
@@ -15,13 +16,15 @@ export default function HomeScreen() {
       setLoading(true);
       setError('');
       const data = await searchMovies(term);
-      if (data.length === 0) {
-        setError('Nenhum filme encontrado.');
+      if (!data || data.length === 0) {
+        setError('Nenhum filme encontrado com esse termo.');
+        setMovies([]);
+      } else {
+        setMovies(data);
       }
-      setMovies(data || []);
     } catch (err) {
-      console.error('Erro ao buscar filmes', err);
-      setError('Erro ao buscar filmes. Tente novamente.');
+      console.error('Erro ao buscar filmes:', err);
+      setError('Erro ao buscar filmes. Verifique sua conexão ou tente mais tarde.');
       setMovies([]);
     } finally {
       setLoading(false);
@@ -34,7 +37,6 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (debounceTimeout) clearTimeout(debounceTimeout);
-
     const timeout = setTimeout(() => {
       if (searchTerm.trim() === '') {
         fetchMovies('action');
@@ -42,7 +44,6 @@ export default function HomeScreen() {
         fetchMovies(searchTerm);
       }
     }, 500);
-
     setDebounceTimeout(timeout);
   }, [searchTerm]);
 
@@ -53,16 +54,18 @@ export default function HomeScreen() {
         placeholderTextColor="#999"
         style={styles.input}
         value={searchTerm}
-        onChangeText={(text) => setSearchTerm(text)}
+        onChangeText={setSearchTerm}
       />
 
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>Carregando...</Text>
+          <Text style={styles.loadingText}>Carregando filmes...</Text>
         </View>
       ) : error ? (
-        <Text style={styles.error}>{error}</Text>
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
       ) : (
         <FlatList
           data={movies}
@@ -89,7 +92,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   loadingContainer: {
-    marginTop: 30,
+    marginTop: 40,
     alignItems: 'center',
   },
   loadingText: {
@@ -97,9 +100,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
   },
-  error: {
-    color: 'red',
+  errorBox: {
+    marginTop: 40,
+    padding: 20,
+    backgroundColor: '#2c0000',
+    borderRadius: 10,
+  },
+  errorText: {
+    color: '#ff6b6b',
+    fontSize: 16,
     textAlign: 'center',
-    marginTop: 20,
   },
 });

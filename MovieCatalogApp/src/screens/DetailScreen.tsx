@@ -7,14 +7,21 @@ export default function DetailScreen() {
   const { imdbID } = useLocalSearchParams();
   const [movie, setMovie] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetch = async () => {
       try {
+        setError('');
         const data = await getMovieDetails(imdbID as string);
-        setMovie(data);
-      } catch (error) {
-        console.error('Erro ao buscar detalhes do filme:', error);
+        if (data && data.Response === 'True') {
+          setMovie(data);
+        } else {
+          setError('Detalhes do filme não encontrados.');
+        }
+      } catch (err) {
+        console.error('Erro ao buscar detalhes:', err);
+        setError('Erro ao carregar detalhes do filme. Tente novamente mais tarde.');
       } finally {
         setLoading(false);
       }
@@ -31,21 +38,25 @@ export default function DetailScreen() {
     );
   }
 
-  if (!movie || movie.Response === 'False') {
+  if (error || !movie) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={{ color: 'red' }}>Filme não encontrado.</Text>
+        <Text style={{ color: '#ff6b6b', textAlign: 'center', padding: 20 }}>
+          {error || 'Erro inesperado ao carregar o filme.'}
+        </Text>
       </View>
     );
   }
 
   return (
     <ScrollView style={styles.container}>
-      <Image
-        source={{ uri: movie.Poster }}
-        style={styles.poster}
-        resizeMode="cover"
-      />
+      {movie.Poster !== 'N/A' ? (
+        <Image source={{ uri: movie.Poster }} style={styles.poster} resizeMode="cover" />
+      ) : (
+        <View style={styles.noPoster}>
+          <Text style={styles.noPosterText}>Filme sem cartaz disponível</Text>
+        </View>
+      )}
       <Text style={styles.title}>{movie.Title}</Text>
       <Text style={styles.label}>Gênero:</Text>
       <Text style={styles.text}>{movie.Genre}</Text>
@@ -70,6 +81,22 @@ const styles = StyleSheet.create({
     height: 450,
     borderRadius: 10,
     marginBottom: 20,
+  },
+  noPoster: {
+    width: '100%',
+    height: 450,
+    backgroundColor: '#333',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  noPosterText: {
+    color: '#ccc',
+    fontStyle: 'italic',
+    fontSize: 16,
+    textAlign: 'center',
+    paddingHorizontal: 16,
   },
   title: {
     fontSize: 26,
