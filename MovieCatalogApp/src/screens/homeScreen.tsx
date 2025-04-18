@@ -7,12 +7,12 @@ export default function HomeScreen() {
   const [searchTerm, setSearchTerm] = useState('');
   const [movies, setMovies] = useState<{ imdbID: string; [key: string]: any }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [debounceTimeout, setDebounceTimeout] = useState<any>(null);
 
   const fetchMovies = async (term: string) => {
     try {
       setLoading(true);
       const data = await searchMovies(term);
-      console.log('Filmes retornados:', data); // debug
       setMovies(data || []);
     } catch (err) {
       console.error('Erro ao buscar filmes', err);
@@ -21,10 +21,25 @@ export default function HomeScreen() {
     }
   };
 
-  // Carregar lista inicial com filmes de ação
+  // Busca inicial com filmes variados
   useEffect(() => {
     fetchMovies('action');
   }, []);
+
+  // Busca automática ao digitar (com debounce)
+  useEffect(() => {
+    if (debounceTimeout) clearTimeout(debounceTimeout);
+
+    const timeout = setTimeout(() => {
+      if (searchTerm.trim() === '') {
+        fetchMovies('action'); // Se campo vazio, mostra filmes variados
+      } else {
+        fetchMovies(searchTerm);
+      }
+    }, 500); // 500ms de atraso
+
+    setDebounceTimeout(timeout);
+  }, [searchTerm]);
 
   return (
     <View style={styles.container}>
@@ -34,7 +49,6 @@ export default function HomeScreen() {
         style={styles.input}
         value={searchTerm}
         onChangeText={(text) => setSearchTerm(text)}
-        onSubmitEditing={() => fetchMovies(searchTerm)}
       />
 
       {loading ? (
