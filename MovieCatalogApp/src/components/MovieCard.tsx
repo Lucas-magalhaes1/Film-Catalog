@@ -3,17 +3,21 @@ import { useRouter } from 'expo-router';
 import { AntDesign } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { isFavorite } from '../storage/favorites';
+import { getAverageRating } from '../storage/reviews';
 
 export default function MovieCard({ movie }: any) {
   const router = useRouter();
   const [isFav, setIsFav] = useState(false);
+  const [avgRating, setAvgRating] = useState(0);
 
   useEffect(() => {
-    const checkFavorite = async () => {
+    const load = async () => {
       const fav = await isFavorite(movie.imdbID);
       setIsFav(fav);
+      const avg = await getAverageRating(movie.imdbID);
+      setAvgRating(avg);
     };
-    checkFavorite();
+    load();
   }, []);
 
   return (
@@ -44,6 +48,16 @@ export default function MovieCard({ movie }: any) {
       <View style={styles.info}>
         <Text style={styles.title}>{movie.Title}</Text>
         <Text style={styles.year}>{movie.Year}</Text>
+        <View style={styles.starsRow}>
+          {[1, 2, 3, 4, 5].map((s) => (
+            <AntDesign
+              key={s}
+              name={avgRating >= s ? 'star' : 'staro'}
+              size={16}
+              color="#ffd700"
+            />
+          ))}
+        </View>
       </View>
     </Pressable>
   );
@@ -94,6 +108,10 @@ const styles = StyleSheet.create({
   },
   year: {
     color: '#ccc',
+    marginTop: 4,
+  },
+  starsRow: {
+    flexDirection: 'row',
     marginTop: 4,
   },
 });
