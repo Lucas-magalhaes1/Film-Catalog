@@ -1,10 +1,20 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { View, Text, Image, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
-import { getMovieDetails } from '../services/omdb';
-import { TouchableOpacity } from 'react-native';
-import { addFavorite, removeFavorite, isFavorite } from '../storage/favorites';
+import {
+  View,
+  Text,
+  Image,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  TextInput,
+  Pressable,
+} from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
+import { getMovieDetails } from '../services/omdb';
+import { addFavorite, removeFavorite, isFavorite } from '../storage/favorites';
+import { addReview, getReviews, Review } from '../storage/reviews';
 
 export default function DetailScreen() {
   const { imdbID } = useLocalSearchParams();
@@ -12,6 +22,11 @@ export default function DetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isFav, setIsFav] = useState(false);
+
+  const [name, setName] = useState('');
+  const [message, setMessage] = useState('');
+  const [rating, setRating] = useState(0);
+  const [reviews, setReviews] = useState<Review[]>([]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -22,6 +37,8 @@ export default function DetailScreen() {
           setMovie(data);
           const fav = await isFavorite(data.imdbID);
           setIsFav(fav);
+          const storedReviews = await getReviews(data.imdbID);
+          setReviews(storedReviews);
         } else {
           setError('Detalhes do filme não encontrados.');
         }
@@ -35,22 +52,21 @@ export default function DetailScreen() {
     fetch();
   }, [imdbID]);
 
-  <TouchableOpacity
-  onPress={async () => {
-    if (movie) {
-      if (isFav) {
-        await removeFavorite(movie.imdbID);
-        setIsFav(false);
-      } else {
-        await addFavorite(movie.imdbID);
-        setIsFav(true);
-      }
-    }
-  }}
-  style={styles.favoriteButton}
->
-  <AntDesign name={isFav ? 'star' : 'staro'} size={28} color="#ffd700" />
-</TouchableOpacity>
+  const handleSubmit = async () => {
+    if (!name || !message || rating === 0) return;
+    const review: Review = {
+      name,
+      message,
+      rating,
+      date: new Date().toISOString(),
+    };
+    await addReview(imdbID as string, review);
+    const updated = await getReviews(imdbID as string);
+    setReviews(updated);
+    setName('');
+    setMessage('');
+    setRating(0);
+  };
 
   if (loading) {
     return (
@@ -81,8 +97,7 @@ export default function DetailScreen() {
             <Text style={styles.noPosterText}>Filme sem cartaz disponível</Text>
           </View>
         )}
-  
-        {/* Botão de favorito */}
+
         <TouchableOpacity
           onPress={async () => {
             if (movie) {
@@ -100,7 +115,7 @@ export default function DetailScreen() {
           <AntDesign name={isFav ? 'heart' : 'hearto'} size={28} color="#ff5c5c" />
         </TouchableOpacity>
       </View>
-  
+
       <Text style={styles.title}>{movie.Title}</Text>
       <Text style={styles.label}>Gênero:</Text>
       <Text style={styles.text}>{movie.Genre}</Text>
@@ -110,6 +125,61 @@ export default function DetailScreen() {
       <Text style={styles.text}>{movie.Actors}</Text>
       <Text style={styles.label}>Sinopse:</Text>
       <Text style={styles.text}>{movie.Plot}</Text>
+
+      <Text style={styles.label}>Avaliação:</Text>
+      <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Pressable key={star} onPress={() => setRating(star)}>
+            <AntDesign
+              name={rating >= star ? 'star' : 'staro'}
+              size={28}
+              color="#ffd700"
+              style={{ marginRight: 5 }}
+            />
+          </Pressable>
+        ))}
+      </View>
+
+      <TextInput
+        placeholder="Seu nome"
+        value={name}
+        onChangeText={setName}
+        style={[styles.input, { marginBottom: 10 }]}
+        placeholderTextColor="#888"
+      />
+      <TextInput
+        placeholder="Sua opinião sobre o filme"
+        value={message}
+        onChangeText={setMessage}
+        style={[styles.input, { height: 80 }]}
+        multiline
+        placeholderTextColor="#888"
+      />
+      <Pressable style={styles.submitButton} onPress={handleSubmit}>
+        <Text style={styles.submitText}>Enviar avaliação</Text>
+      </Pressable>
+
+      {reviews.length > 0 && (
+        <View style={{ marginTop: 20 }}>
+          <Text style={styles.label}>Comentários:</Text>
+          {reviews.map((rev, index) => (
+            <View key={index} style={styles.reviewBox}>
+              <Text style={styles.reviewName}>{rev.name}</Text>
+              <View style={{ flexDirection: 'row' }}>
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <AntDesign
+                    key={s}
+                    name={rev.rating >= s ? 'star' : 'staro'}
+                    size={16}
+                    color="#ffd700"
+                  />
+                ))}
+              </View>
+              <Text style={styles.reviewMessage}>{rev.message}</Text>
+            </View>
+          ))}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -163,7 +233,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   favoriteButton: {
     position: 'absolute',
     top: 12,
@@ -172,5 +241,38 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 50,
     elevation: 5,
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+  },
+  submitButton: {
+    backgroundColor: '#ff5c5c',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  submitText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  reviewBox: {
+    backgroundColor: '#1e1e1e',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  reviewName: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  reviewMessage: {
+    color: '#ccc',
+    marginTop: 6,
   },
 });
