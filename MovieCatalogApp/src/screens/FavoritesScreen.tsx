@@ -1,11 +1,16 @@
-import { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  Pressable,
+} from 'react-native';
 import { getFavorites } from '../storage/favorites';
 import { getMovieDetails } from '../services/omdb';
 import MovieCard from '../components/MovieCard';
 import { useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
-
 
 export default function FavoritesScreen() {
   const [favoriteMovies, setFavoriteMovies] = useState<any[]>([]);
@@ -15,8 +20,8 @@ export default function FavoritesScreen() {
     try {
       setLoading(true);
       const ids = await getFavorites();
-      const movies = await Promise.all(ids.map(id => getMovieDetails(id)));
-      const validMovies = movies.filter(movie => movie?.Response === 'True');
+      const movies = await Promise.all(ids.map((id) => getMovieDetails(id)));
+      const validMovies = movies.filter((movie) => movie?.Response === 'True');
       setFavoriteMovies(validMovies);
     } catch (error) {
       console.error('Erro ao buscar filmes favoritos:', error);
@@ -33,13 +38,20 @@ export default function FavoritesScreen() {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.header}>💖 Seus Filmes Favoritos</Text>
+      <Text style={styles.subheader}>Todos os filmes que você marcou com ❤️</Text>
+
       {loading ? (
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#fff" />
+          <ActivityIndicator size="large" color="#FFA500" />
           <Text style={styles.loadingText}>Carregando favoritos...</Text>
         </View>
       ) : favoriteMovies.length === 0 ? (
-        <Text style={styles.emptyText}>Nenhum filme favoritado ainda.</Text>
+        <View style={styles.emptyBox}>
+          <Text style={styles.emptyIcon}>📭</Text>
+          <Text style={styles.emptyText}>Você ainda não favoritou nenhum filme.</Text>
+          <Text style={styles.emptyTip}>Explore e toque no ❤️ para salvar seus favoritos!</Text>
+        </View>
       ) : (
         <FlatList
           data={favoriteMovies}
@@ -55,8 +67,21 @@ export default function FavoritesScreen() {
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    backgroundColor: '#121212',
+    backgroundColor: '#0e0e0e',
     flex: 1,
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFA500',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  subheader: {
+    fontSize: 14,
+    color: '#aaa',
+    textAlign: 'center',
+    marginBottom: 16,
   },
   loading: {
     marginTop: 40,
@@ -67,10 +92,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
   },
+  emptyBox: {
+    alignItems: 'center',
+    marginTop: 60,
+  },
+  emptyIcon: {
+    fontSize: 50,
+    marginBottom: 10,
+  },
   emptyText: {
     color: '#ccc',
-    fontSize: 16,
+    fontSize: 18,
     textAlign: 'center',
-    marginTop: 40,
+    marginBottom: 4,
+  },
+  emptyTip: {
+    color: '#FFA500',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

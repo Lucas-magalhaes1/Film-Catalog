@@ -15,22 +15,32 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: '#FFA500', // Cor laranja vibrante
+        tabBarInactiveTintColor: '#888',  // Cinza claro para contraste
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
           ios: {
             position: 'absolute',
+            backgroundColor: '#1a1a1a',
+            borderTopWidth: 0,
+            elevation: 10,
+            height: 60,
           },
-          default: {},
+          android: {
+            backgroundColor: '#1a1a1a',
+            borderTopWidth: 0,
+            elevation: 10,
+            height: 60,
+          },
         }),
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'Início',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="house.fill" color={color} />
           ),

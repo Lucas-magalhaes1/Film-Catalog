@@ -71,7 +71,7 @@ export default function DetailScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#fff" />
+        <ActivityIndicator size="large" color="#FFA500" />
         <Text style={{ color: '#fff', marginTop: 10 }}>Carregando...</Text>
       </View>
     );
@@ -112,28 +112,28 @@ export default function DetailScreen() {
           }}
           style={styles.favoriteButton}
         >
-          <AntDesign name={isFav ? 'heart' : 'hearto'} size={28} color="#ff5c5c" />
+          <AntDesign name={isFav ? 'heart' : 'hearto'} size={28} color="#FFA500" />
         </TouchableOpacity>
       </View>
 
       <Text style={styles.title}>{movie.Title}</Text>
-      <Text style={styles.label}>Gênero:</Text>
+      <Text style={styles.label}>🎬 Gênero:</Text>
       <Text style={styles.text}>{movie.Genre}</Text>
-      <Text style={styles.label}>Diretor:</Text>
+      <Text style={styles.label}>🎬 Diretor:</Text>
       <Text style={styles.text}>{movie.Director}</Text>
-      <Text style={styles.label}>Atores:</Text>
+      <Text style={styles.label}>🎬 Atores:</Text>
       <Text style={styles.text}>{movie.Actors}</Text>
-      <Text style={styles.label}>Sinopse:</Text>
+      <Text style={styles.label}>📝 Sinopse:</Text>
       <Text style={styles.text}>{movie.Plot}</Text>
 
-      <Text style={styles.label}>Avaliação:</Text>
+      <Text style={styles.label}>⭐ Avaliação:</Text>
       <View style={{ flexDirection: 'row', marginBottom: 16 }}>
         {[1, 2, 3, 4, 5].map((star) => (
           <Pressable key={star} onPress={() => setRating(star)}>
             <AntDesign
               name={rating >= star ? 'star' : 'staro'}
               size={28}
-              color="#ffd700"
+              color="#FFD700"
               style={{ marginRight: 5 }}
             />
           </Pressable>
@@ -145,7 +145,7 @@ export default function DetailScreen() {
         value={name}
         onChangeText={setName}
         style={[styles.input, { marginBottom: 10 }]}
-        placeholderTextColor="#888"
+        placeholderTextColor="#999"
       />
       <TextInput
         placeholder="Sua opinião sobre o filme"
@@ -153,7 +153,7 @@ export default function DetailScreen() {
         onChangeText={setMessage}
         style={[styles.input, { height: 80 }]}
         multiline
-        placeholderTextColor="#888"
+        placeholderTextColor="#999"
       />
       <Pressable style={styles.submitButton} onPress={handleSubmit}>
         <Text style={styles.submitText}>Enviar avaliação</Text>
@@ -161,17 +161,17 @@ export default function DetailScreen() {
 
       {reviews.length > 0 && (
         <View style={{ marginTop: 20 }}>
-          <Text style={styles.label}>Comentários:</Text>
+          <Text style={styles.label}>💬 Comentários:</Text>
           {reviews.map((rev, index) => (
             <View key={index} style={styles.reviewBox}>
               <Text style={styles.reviewName}>{rev.name}</Text>
-              <View style={{ flexDirection: 'row' }}>
+              <View style={{ flexDirection: 'row', marginBottom: 4 }}>
                 {[1, 2, 3, 4, 5].map((s) => (
                   <AntDesign
                     key={s}
                     name={rev.rating >= s ? 'star' : 'staro'}
                     size={16}
-                    color="#ffd700"
+                    color="#FFD700"
                   />
                 ))}
               </View>
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   noPosterText: {
-    color: '#ccc',
+    color: '#aaa',
     fontStyle: 'italic',
     fontSize: 16,
     textAlign: 'center',
@@ -215,12 +215,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#FFA500',
     marginBottom: 10,
   },
   label: {
     fontWeight: 'bold',
-    color: '#ccc',
+    color: '#FFA500',
     marginTop: 10,
   },
   text: {
@@ -243,36 +243,39 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#1e1e1e',
     borderRadius: 8,
     padding: 10,
     fontSize: 16,
+    color: '#fff',
+    borderWidth: 1,
+    borderColor: '#FFA500',
   },
   submitButton: {
-    backgroundColor: '#ff5c5c',
+    backgroundColor: '#FFA500',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 10,
   },
   submitText: {
-    color: '#fff',
+    color: '#121212',
     fontSize: 16,
     fontWeight: 'bold',
   },
   reviewBox: {
     backgroundColor: '#1e1e1e',
-    padding: 10,
+    padding: 12,
     borderRadius: 8,
     marginBottom: 10,
   },
   reviewName: {
     color: '#fff',
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   reviewMessage: {
     color: '#ccc',
-    marginTop: 6,
+    marginTop: 4,
   },
 });

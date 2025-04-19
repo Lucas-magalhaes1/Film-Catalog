@@ -26,17 +26,21 @@ export default function MovieCard({ movie }: any) {
       style={styles.card}
     >
       <View style={{ position: 'relative' }}>
-        {movie.Poster !== 'N/A' ? (
-          <Image
-            source={{ uri: movie.Poster }}
-            style={styles.poster}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.noPoster}>
-            <Text style={styles.noPosterText}>Filme sem cartaz disponível</Text>
-          </View>
-        )}
+      {movie.Poster && movie.Poster !== 'N/A' && !movie.Poster.includes('404') ? (
+  <Image
+    source={{ uri: movie.Poster }}
+    style={styles.poster}
+    resizeMode="cover"
+    onError={() => {
+      // Isso evita que o app quebre se a imagem der erro
+      console.log('Imagem não encontrada:', movie.Poster);
+    }}
+  />
+) : (
+  <View style={styles.noPoster}>
+    <Text style={styles.noPosterText}>Filme sem cartaz disponível</Text>
+  </View>
+)}
 
         {isFav && (
           <View style={styles.favoriteIcon}>
@@ -84,7 +88,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   noPosterText: {
-    color: '#ccc',
+    color: '#fff', // ou '#eee' ou laranja
     fontStyle: 'italic',
     fontSize: 14,
     textAlign: 'center',

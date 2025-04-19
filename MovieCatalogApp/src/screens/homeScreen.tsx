@@ -22,24 +22,34 @@ export default function HomeScreen() {
   const [showYears, setShowYears] = useState(false);
   const [selectedGenre, setSelectedGenre] = useState<string | undefined>();
   const [showGenres, setShowGenres] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   const years = Array.from({ length: 20 }, (_, i) => `${2025 - i}`);
   const genres = ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi', 'Romance', 'Adventure'];
 
-  const fetchMovies = async (term: string, year?: string, genre?: string) => {
+  const fetchMovies = async (
+    term: string,
+    year?: string,
+    genre?: string,
+    newPage: number = 1,
+    append: boolean = false
+  ) => {
     try {
       setLoading(true);
       setError('');
-
-      const basicResults: { imdbID: string; [key: string]: any }[] = await searchMovies(term, year);
+      const basicResults = await searchMovies(term, year, newPage);
       if (!basicResults || basicResults.length === 0) {
-        setError('Nenhum filme encontrado.');
-        setMovies([]);
+        if (!append) {
+          setError('Nenhum filme encontrado.');
+          setMovies([]);
+        }
+        setHasMore(false);
         return;
       }
 
       const detailedResults = await Promise.all(
-        basicResults.map((movie) => getMovieDetails(movie.imdbID))
+        basicResults.map((movie: { imdbID: string }) => getMovieDetails(movie.imdbID))
       );
 
       const filtered = genre
@@ -50,11 +60,12 @@ export default function HomeScreen() {
           )
         : detailedResults.filter((movie) => movie?.Response === 'True');
 
-      if (filtered.length === 0) {
+      if (filtered.length === 0 && !append) {
         setError('Nenhum filme encontrado para esse gênero.');
       }
 
-      setMovies(filtered);
+      setMovies((prev) => (append ? [...prev, ...filtered] : filtered));
+      setHasMore(filtered.length >= 10);
     } catch (err) {
       console.error('Erro ao buscar filmes', err);
       setError('Erro ao buscar filmes. Tente novamente.');
@@ -66,40 +77,49 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchMovies(searchTerm || 'movie', selectedYear, selectedGenre);
+      setPage(1);
+      fetchMovies(searchTerm || 'movie', selectedYear, selectedGenre, 1);
     }, [selectedYear, selectedGenre])
   );
 
   useEffect(() => {
     if (debounceTimeout) clearTimeout(debounceTimeout);
     const timeout = setTimeout(() => {
+      setPage(1);
       if (searchTerm.trim() === '') {
-        fetchMovies('movie', selectedYear, selectedGenre);
+        fetchMovies('movie', selectedYear, selectedGenre, 1);
       } else {
-        fetchMovies(searchTerm, selectedYear, selectedGenre);
+        fetchMovies(searchTerm, selectedYear, selectedGenre, 1);
       }
     }, 500);
     setDebounceTimeout(timeout);
   }, [searchTerm, selectedYear, selectedGenre]);
 
+  const loadMore = () => {
+    if (!loading && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchMovies(searchTerm || 'movie', selectedYear, selectedGenre, nextPage, true);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.yearHeader}>
-        <Text style={styles.yearTitle}>🎬 Selecionar ano e gênero</Text>
-        <Text style={styles.yearSubtitle}>Veja os top filmes lançados por filtros:</Text>
+      <Text style={styles.welcome}>🎥 Bem-vindo ao Catálogo de Filmes</Text>
+      <Text style={styles.slogan}>Descubra, explore e favorite seus filmes favoritos!</Text>
 
-        <Pressable style={styles.yearButton} onPress={() => setShowYears(!showYears)}>
-          <Text style={styles.yearButtonText}>{selectedYear || 'Todos os anos'}</Text>
+      <View style={styles.filterHeader}>
+        <Pressable style={styles.filterButton} onPress={() => setShowYears(!showYears)}>
+          <Text style={styles.filterText}>{selectedYear || 'Ano'}</Text>
         </Pressable>
-
-        <Pressable style={styles.genreButton} onPress={() => setShowGenres(!showGenres)}>
-          <Text style={styles.yearButtonText}>{selectedGenre || 'Todos os gêneros'}</Text>
+        <Pressable style={styles.filterButtonAlt} onPress={() => setShowGenres(!showGenres)}>
+          <Text style={styles.filterText}>{selectedGenre || 'Gênero'}</Text>
         </Pressable>
       </View>
 
       {showYears && (
         <FlatList
-          style={styles.yearList}
+          style={styles.filterList}
           data={years}
           keyExtractor={(item) => item}
           renderItem={({ item }) => (
@@ -108,9 +128,9 @@ export default function HomeScreen() {
                 setSelectedYear(item);
                 setShowYears(false);
               }}
-              style={styles.yearItem}
+              style={styles.filterItem}
             >
-              <Text style={styles.yearItemText}>{item}</Text>
+              <Text style={styles.filterItemText}>{item}</Text>
             </Pressable>
           )}
           ListFooterComponent={() => (
@@ -119,19 +139,19 @@ export default function HomeScreen() {
                 setSelectedYear(undefined);
                 setShowYears(false);
               }}
-              style={styles.yearItem}
+              style={styles.filterItem}
             >
-              <Text style={[styles.yearItemText, { fontStyle: 'italic' }]}>Todos os anos</Text>
+              <Text style={[styles.filterItemText, { fontStyle: 'italic', color: '#FFA500' }]}>
+                Todos os anos
+              </Text>
             </Pressable>
           )}
-          contentContainerStyle={{ paddingBottom: 10 }}
-          showsVerticalScrollIndicator={false}
         />
       )}
 
       {showGenres && (
         <FlatList
-          style={styles.yearList}
+          style={styles.filterList}
           data={genres}
           keyExtractor={(item) => item}
           renderItem={({ item }) => (
@@ -140,9 +160,9 @@ export default function HomeScreen() {
                 setSelectedGenre(item);
                 setShowGenres(false);
               }}
-              style={styles.yearItem}
+              style={styles.filterItem}
             >
-              <Text style={styles.yearItemText}>{item}</Text>
+              <Text style={styles.filterItemText}>{item}</Text>
             </Pressable>
           )}
           ListFooterComponent={() => (
@@ -151,27 +171,27 @@ export default function HomeScreen() {
                 setSelectedGenre(undefined);
                 setShowGenres(false);
               }}
-              style={styles.yearItem}
+              style={styles.filterItem}
             >
-              <Text style={[styles.yearItemText, { fontStyle: 'italic' }]}>Todos os gêneros</Text>
+              <Text style={[styles.filterItemText, { fontStyle: 'italic', color: '#FFA500' }]}>
+                Todos os gêneros
+              </Text>
             </Pressable>
           )}
-          contentContainerStyle={{ paddingBottom: 10 }}
-          showsVerticalScrollIndicator={false}
         />
       )}
 
       <TextInput
-        placeholder="Buscar filmes..."
-        placeholderTextColor="#999"
+        placeholder="🔍 Buscar filmes..."
+        placeholderTextColor="#aaa"
         style={styles.input}
         value={searchTerm}
         onChangeText={setSearchTerm}
       />
 
-      {loading ? (
+      {loading && page === 1 ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#fff" />
+          <ActivityIndicator size="large" color="#FFA500" />
           <Text style={styles.loadingText}>Carregando filmes...</Text>
         </View>
       ) : error ? (
@@ -183,6 +203,8 @@ export default function HomeScreen() {
           data={movies}
           keyExtractor={(item) => item.imdbID}
           renderItem={({ item }) => <MovieCard movie={item} />}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.6}
           contentContainerStyle={{ paddingBottom: 16 }}
         />
       )}
@@ -193,62 +215,68 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    backgroundColor: '#121212',
+    backgroundColor: '#0e0e0e',
     flex: 1,
   },
+  welcome: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFA500',
+    textAlign: 'center',
+  },
+  slogan: {
+    fontSize: 14,
+    color: '#ccc',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
   input: {
-    backgroundColor: '#FFF',
-    borderRadius: 8,
+    backgroundColor: '#1e1e1e',
+    borderRadius: 10,
     padding: 10,
     marginBottom: 16,
     fontSize: 16,
-  },
-  yearHeader: {
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  yearTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#FFA500',
   },
-  yearSubtitle: {
-    fontSize: 14,
-    color: '#aaa',
+  filterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 10,
   },
-  yearButton: {
-    backgroundColor: '#ff5c5c',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginBottom: 8,
+  filterButton: {
+    backgroundColor: '#FFA500',
+    padding: 10,
+    borderRadius: 8,
+    flex: 1,
+    marginRight: 5,
   },
-  genreButton: {
-    backgroundColor: '#5c9eff',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+  filterButtonAlt: {
+    backgroundColor: '#444',
+    padding: 10,
+    borderRadius: 8,
+    flex: 1,
+    marginLeft: 5,
   },
-  yearButtonText: {
+  filterText: {
+    textAlign: 'center',
     color: '#fff',
-    fontSize: 18,
     fontWeight: 'bold',
   },
-  yearList: {
-    maxHeight: 200,
-    marginBottom: 16,
-    borderRadius: 12,
+  filterList: {
+    maxHeight: 180,
     backgroundColor: '#1e1e1e',
-    padding: 10,
+    marginBottom: 12,
+    borderRadius: 10,
+    paddingHorizontal: 10,
   },
-  yearItem: {
+  filterItem: {
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#333',
   },
-  yearItemText: {
+  filterItemText: {
     color: '#fff',
     fontSize: 16,
     textAlign: 'center',
@@ -265,11 +293,11 @@ const styles = StyleSheet.create({
   errorBox: {
     marginTop: 40,
     padding: 20,
-    backgroundColor: '#2c0000',
+    backgroundColor: '#330000',
     borderRadius: 10,
   },
   errorText: {
-    color: '#ff6b6b',
+    color: '#FF6B6B',
     fontSize: 16,
     textAlign: 'center',
   },
