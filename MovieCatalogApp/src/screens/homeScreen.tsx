@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Pressable,
 } from 'react-native';
-import { searchMovies } from '../services/omdb';
+import { searchMovies, getMovieDetails } from '../services/omdb';
 import MovieCard from '../components/MovieCard';
 import { useFocusEffect } from 'expo-router';
 
@@ -20,17 +20,41 @@ export default function HomeScreen() {
   const [debounceTimeout, setDebounceTimeout] = useState<any>(null);
   const [selectedYear, setSelectedYear] = useState<string | undefined>();
   const [showYears, setShowYears] = useState(false);
-  const years = Array.from({ length: 20 }, (_, i) => `${2025 - i}`);
+  const [selectedGenre, setSelectedGenre] = useState<string | undefined>();
+  const [showGenres, setShowGenres] = useState(false);
 
-  const fetchMovies = async (term: string, year?: string) => {
+  const years = Array.from({ length: 20 }, (_, i) => `${2025 - i}`);
+  const genres = ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi', 'Romance', 'Adventure'];
+
+  const fetchMovies = async (term: string, year?: string, genre?: string) => {
     try {
       setLoading(true);
       setError('');
-      const data = await searchMovies(term, year);
-      if (!data || data.length === 0) {
+
+      const basicResults: { imdbID: string; [key: string]: any }[] = await searchMovies(term, year);
+      if (!basicResults || basicResults.length === 0) {
         setError('Nenhum filme encontrado.');
+        setMovies([]);
+        return;
       }
-      setMovies(data || []);
+
+      const detailedResults = await Promise.all(
+        basicResults.map((movie) => getMovieDetails(movie.imdbID))
+      );
+
+      const filtered = genre
+        ? detailedResults.filter(
+            (movie) =>
+              movie?.Genre?.toLowerCase().includes(genre.toLowerCase()) &&
+              movie?.Response === 'True'
+          )
+        : detailedResults.filter((movie) => movie?.Response === 'True');
+
+      if (filtered.length === 0) {
+        setError('Nenhum filme encontrado para esse gênero.');
+      }
+
+      setMovies(filtered);
     } catch (err) {
       console.error('Erro ao buscar filmes', err);
       setError('Erro ao buscar filmes. Tente novamente.');
@@ -42,35 +66,37 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchMovies(searchTerm || 'movie', selectedYear);
-    }, [selectedYear])
+      fetchMovies(searchTerm || 'movie', selectedYear, selectedGenre);
+    }, [selectedYear, selectedGenre])
   );
 
   useEffect(() => {
     if (debounceTimeout) clearTimeout(debounceTimeout);
     const timeout = setTimeout(() => {
       if (searchTerm.trim() === '') {
-        fetchMovies('movie', selectedYear);
+        fetchMovies('movie', selectedYear, selectedGenre);
       } else {
-        fetchMovies(searchTerm, selectedYear);
+        fetchMovies(searchTerm, selectedYear, selectedGenre);
       }
     }, 500);
     setDebounceTimeout(timeout);
-  }, [searchTerm, selectedYear]);
+  }, [searchTerm, selectedYear, selectedGenre]);
 
   return (
     <View style={styles.container}>
-      {/* Header de filtro */}
       <View style={styles.yearHeader}>
-        <Text style={styles.yearTitle}>🎬 Selecionar ano</Text>
-        <Text style={styles.yearSubtitle}>Veja os top filmes lançados em:</Text>
+        <Text style={styles.yearTitle}>🎬 Selecionar ano e gênero</Text>
+        <Text style={styles.yearSubtitle}>Veja os top filmes lançados por filtros:</Text>
 
         <Pressable style={styles.yearButton} onPress={() => setShowYears(!showYears)}>
           <Text style={styles.yearButtonText}>{selectedYear || 'Todos os anos'}</Text>
         </Pressable>
+
+        <Pressable style={styles.genreButton} onPress={() => setShowGenres(!showGenres)}>
+          <Text style={styles.yearButtonText}>{selectedGenre || 'Todos os gêneros'}</Text>
+        </Pressable>
       </View>
 
-      {/* Lista de anos */}
       {showYears && (
         <FlatList
           style={styles.yearList}
@@ -103,7 +129,38 @@ export default function HomeScreen() {
         />
       )}
 
-      {/* Campo de busca */}
+      {showGenres && (
+        <FlatList
+          style={styles.yearList}
+          data={genres}
+          keyExtractor={(item) => item}
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => {
+                setSelectedGenre(item);
+                setShowGenres(false);
+              }}
+              style={styles.yearItem}
+            >
+              <Text style={styles.yearItemText}>{item}</Text>
+            </Pressable>
+          )}
+          ListFooterComponent={() => (
+            <Pressable
+              onPress={() => {
+                setSelectedGenre(undefined);
+                setShowGenres(false);
+              }}
+              style={styles.yearItem}
+            >
+              <Text style={[styles.yearItemText, { fontStyle: 'italic' }]}>Todos os gêneros</Text>
+            </Pressable>
+          )}
+          contentContainerStyle={{ paddingBottom: 10 }}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+
       <TextInput
         placeholder="Buscar filmes..."
         placeholderTextColor="#999"
@@ -112,7 +169,6 @@ export default function HomeScreen() {
         onChangeText={setSearchTerm}
       />
 
-      {/* Resultado */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#fff" />
@@ -164,6 +220,13 @@ const styles = StyleSheet.create({
   },
   yearButton: {
     backgroundColor: '#ff5c5c',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  genreButton: {
+    backgroundColor: '#5c9eff',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 12,
