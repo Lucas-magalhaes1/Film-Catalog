@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { View, FlatList, TextInput, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { searchMovies } from '../services/omdb';
 import MovieCard from '../components/MovieCard';
-
+import { useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 
 export default function HomeScreen() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -11,29 +12,30 @@ export default function HomeScreen() {
   const [error, setError] = useState('');
   const [debounceTimeout, setDebounceTimeout] = useState<any>(null);
 
-  const fetchMovies = async (term: string) => {
+  const fetchMovies = async (term: string, year?: string) => {
     try {
       setLoading(true);
       setError('');
-      const data = await searchMovies(term);
+      const data = await searchMovies(term, year);
       if (!data || data.length === 0) {
-        setError('Nenhum filme encontrado com esse termo.');
-        setMovies([]);
-      } else {
-        setMovies(data);
+        setError('Nenhum filme encontrado.');
       }
+      setMovies(data || []);
     } catch (err) {
-      console.error('Erro ao buscar filmes:', err);
-      setError('Erro ao buscar filmes. Verifique sua conexão ou tente mais tarde.');
+      console.error('Erro ao buscar filmes', err);
+      setError('Erro ao buscar filmes. Tente novamente.');
       setMovies([]);
     } finally {
       setLoading(false);
     }
   };
+  
 
-  useEffect(() => {
-    fetchMovies('action');
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchMovies('movie', '2025');
+    }, [])
+  );
 
   useEffect(() => {
     if (debounceTimeout) clearTimeout(debounceTimeout);

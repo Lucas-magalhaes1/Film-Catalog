@@ -1,25 +1,45 @@
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { AntDesign } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import { isFavorite } from '../storage/favorites';
 
 export default function MovieCard({ movie }: any) {
   const router = useRouter();
+  const [isFav, setIsFav] = useState(false);
+
+  useEffect(() => {
+    const checkFavorite = async () => {
+      const fav = await isFavorite(movie.imdbID);
+      setIsFav(fav);
+    };
+    checkFavorite();
+  }, []);
 
   return (
     <Pressable
       onPress={() => router.push(`/${movie.imdbID}`)}
       style={styles.card}
     >
-      {movie.Poster !== 'N/A' ? (
-        <Image
-          source={{ uri: movie.Poster }}
-          style={styles.poster}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={styles.noPoster}>
-          <Text style={styles.noPosterText}>Filme sem cartaz disponível</Text>
-        </View>
-      )}
+      <View style={{ position: 'relative' }}>
+        {movie.Poster !== 'N/A' ? (
+          <Image
+            source={{ uri: movie.Poster }}
+            style={styles.poster}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.noPoster}>
+            <Text style={styles.noPosterText}>Filme sem cartaz disponível</Text>
+          </View>
+        )}
+
+        {isFav && (
+          <View style={styles.favoriteIcon}>
+            <AntDesign name="heart" size={24} color="#ff5c5c" />
+          </View>
+        )}
+      </View>
 
       <View style={styles.info}>
         <Text style={styles.title}>{movie.Title}</Text>
@@ -55,6 +75,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     paddingHorizontal: 10,
+  },
+  favoriteIcon: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: '#222',
+    padding: 6,
+    borderRadius: 50,
   },
   info: {
     padding: 10,

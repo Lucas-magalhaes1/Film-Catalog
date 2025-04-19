@@ -2,12 +2,16 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View, Text, Image, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { getMovieDetails } from '../services/omdb';
+import { TouchableOpacity } from 'react-native';
+import { addFavorite, removeFavorite, isFavorite } from '../storage/favorites';
+import { AntDesign } from '@expo/vector-icons';
 
 export default function DetailScreen() {
   const { imdbID } = useLocalSearchParams();
   const [movie, setMovie] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isFav, setIsFav] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
@@ -16,6 +20,8 @@ export default function DetailScreen() {
         const data = await getMovieDetails(imdbID as string);
         if (data && data.Response === 'True') {
           setMovie(data);
+          const fav = await isFavorite(data.imdbID);
+          setIsFav(fav);
         } else {
           setError('Detalhes do filme não encontrados.');
         }
@@ -28,6 +34,23 @@ export default function DetailScreen() {
     };
     fetch();
   }, [imdbID]);
+
+  <TouchableOpacity
+  onPress={async () => {
+    if (movie) {
+      if (isFav) {
+        await removeFavorite(movie.imdbID);
+        setIsFav(false);
+      } else {
+        await addFavorite(movie.imdbID);
+        setIsFav(true);
+      }
+    }
+  }}
+  style={styles.favoriteButton}
+>
+  <AntDesign name={isFav ? 'star' : 'staro'} size={28} color="#ffd700" />
+</TouchableOpacity>
 
   if (loading) {
     return (
@@ -50,13 +73,34 @@ export default function DetailScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      {movie.Poster !== 'N/A' ? (
-        <Image source={{ uri: movie.Poster }} style={styles.poster} resizeMode="cover" />
-      ) : (
-        <View style={styles.noPoster}>
-          <Text style={styles.noPosterText}>Filme sem cartaz disponível</Text>
-        </View>
-      )}
+      <View style={{ position: 'relative' }}>
+        {movie.Poster !== 'N/A' ? (
+          <Image source={{ uri: movie.Poster }} style={styles.poster} resizeMode="cover" />
+        ) : (
+          <View style={styles.noPoster}>
+            <Text style={styles.noPosterText}>Filme sem cartaz disponível</Text>
+          </View>
+        )}
+  
+        {/* Botão de favorito */}
+        <TouchableOpacity
+          onPress={async () => {
+            if (movie) {
+              if (isFav) {
+                await removeFavorite(movie.imdbID);
+                setIsFav(false);
+              } else {
+                await addFavorite(movie.imdbID);
+                setIsFav(true);
+              }
+            }
+          }}
+          style={styles.favoriteButton}
+        >
+          <AntDesign name={isFav ? 'heart' : 'hearto'} size={28} color="#ff5c5c" />
+        </TouchableOpacity>
+      </View>
+  
       <Text style={styles.title}>{movie.Title}</Text>
       <Text style={styles.label}>Gênero:</Text>
       <Text style={styles.text}>{movie.Genre}</Text>
@@ -118,5 +162,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#121212',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  favoriteButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: '#222',
+    padding: 8,
+    borderRadius: 50,
+    elevation: 5,
   },
 });
