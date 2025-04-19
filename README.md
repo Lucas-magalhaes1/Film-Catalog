@@ -147,14 +147,11 @@ Essa tela oferece **interatividade e engajamento**, permitindo que os usuários 
 > ⚙️ Todas as telas seguem uma identidade visual moderna, acessível e consistente, com foco em usabilidade e visual atrativo.
 
 
-
 ## 🎥 Demonstração em Vídeo
 
-<video width="100%" controls>
-  <source src="MovieCatalogApp/imgs/Demo-video.mp4.mp4" type="video/mp4">
-</video>
+Você pode baixar e assistir o vídeo da demonstração clicando no link abaixo:
 
-
+[📥 Baixar Vídeo de Demonstração](./MovieCatalogApp/imgs/Demo-video.mp4.mp4)
 
 ---
 
@@ -168,24 +165,21 @@ Essa tela oferece **interatividade e engajamento**, permitindo que os usuários 
 
 - Tema claro/escuro dinâmico
 
-## 📚 Aprendizados da Atividade
- Esta atividade teve como objetivo:
+## 📚 Aprendizados do projeto
 
-Praticar o consumo de APIs externas (OMDb)
+Esta atividade teve como objetivo:
 
-Trabalhar com armazenamento local usando AsyncStorage
-
-Aplicar boas práticas com React Hooks
-
-Criar um app completo com diversas telas e navegação fluida
+- 🔄 Praticar o consumo de **APIs externas (OMDb)**
+- 💾 Trabalhar com **armazenamento local** usando `AsyncStorage`
+- ⚙️ Aplicar **boas práticas com React Hooks**
+- 📱 Criar um **app completo** com diversas telas e navegação fluida
 
 Também serviu como prática de:
 
-Trabalhar com FlatList e componentes personalizados
+- 🧩 Trabalhar com `FlatList` e **componentes personalizados**
+- 🔁 Usar `useFocusEffect` para **atualização dinâmica**
+- 🧼 Aplicar **modularização** e **boas práticas** em React Native
 
-Usar useFocusEffect para atualização dinâmica
-
-Modularização e boas práticas em React Native
 
 
 ## 📌 Como Rodar o Projeto
